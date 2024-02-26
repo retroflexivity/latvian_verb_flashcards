@@ -22,6 +22,7 @@ head = r'''<!-- Required meta tags -->
   </style>
   '''
 
+
 def req_sql(cmd, vals=None):
     conn = sqlite3.connect('flask.db')
     c = conn.cursor()
@@ -32,6 +33,7 @@ def req_sql(cmd, vals=None):
     conn.commit()
     conn.close()
     return res
+
 
 req_sql("""CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
@@ -51,17 +53,29 @@ req_sql("""CREATE TABLE IF NOT EXISTS cards (
     mastery INTEGER DEFAULT 0
 )""")
 
+
 def get_form(card):
-    response = requests.get(f'http://api.tezaurs.lv/v1/inflections/{card["lemma"]}')
+    response = requests.get(
+        f'http://api.tezaurs.lv/v1/inflections/{card["lemma"]}')
     paradigm = response.json()[0]
-    forms = [form['Vārds'] for form in paradigm if form.get('Vārdšķira') == 'Darbības vārds' and form.get('Laiks') == card['laiks'] and form.get('Persona') == card['persona'] and form.get('Skaitlis') in (card['skaitlis'], 'Nepiemīt') and form.get('Izteiksme') == 'Īstenības' and form.get('Noliegums') == 'Nē']
+    forms = [
+        form['Vārds'] for form in paradigm
+        if form.get('Vārdšķira') == 'Darbības vārds' and form.get('Laiks') ==
+        card['laiks'] and form.get('Persona') == card['persona']
+        and form.get('Skaitlis') in (card['skaitlis'], 'Nepiemīt') and
+        form.get('Izteiksme') == 'Īstenības' and form.get('Noliegums') == 'Nē'
+    ]
     return forms
+
 
 def check_verb(word):
     response = requests.get(f'http://api.tezaurs.lv/v1/inflections/{word}')
     if response.status_code == 200:
         paradigm = response.json()[0]
-        verbs = [form for form in paradigm if form.get('Vārdšķira') == 'Darbības vārds']
+        verbs = [
+            form for form in paradigm
+            if form.get('Vārdšķira') == 'Darbības vārds'
+        ]
         if len(verbs) > 0:
             return True
         else:
@@ -69,32 +83,40 @@ def check_verb(word):
     else:
         print('response error', response.status_code)
 
+
 username = None
 password = None
 cards = []
 
+
 def not_in_deck(lemma, deck_id):
-    cards = req_sql('SELECT * FROM cards WHERE lemma = ? AND deck_id = ?', (lemma, deck_id))
+    cards = req_sql('SELECT * FROM cards WHERE lemma = ? AND deck_id = ?',
+                    (lemma, deck_id))
     if len(cards) == 0:
         return True
     else:
         return False
 
+
 def add_default_decks(username):
-    print('adding decks')
     for file in os.listdir('default_decks'):
         deck_name = file.split('.')[0]
-        req_sql('INSERT INTO decks (deck_name, username) VALUES (?, ?)', (deck_name, username))
-        deck_id = req_sql('SELECT deck_id FROM decks WHERE deck_name = ? AND username = ?', (deck_name, username))[0][0]
-        print(deck_id)
+        req_sql('INSERT INTO decks (deck_name, username) VALUES (?, ?)',
+                (deck_name, username))
+        deck_id = req_sql(
+            'SELECT deck_id FROM decks WHERE deck_name = ? AND username = ?',
+            (deck_name, username))[0][0]
         with open(f'default_decks/{file}', 'r') as f:
             words = f.read().split('\n')
             for word in words:
-                req_sql('INSERT INTO cards (lemma, deck_id) VALUES (?, ?)', (word, deck_id))
-            
+                req_sql('INSERT INTO cards (lemma, deck_id) VALUES (?, ?)',
+                        (word, deck_id))
+
+
 @app.route('/')
 def homepage():
     return render_template('homepage.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -102,15 +124,18 @@ def login():
     global password
     username = request.form['username']
     password = request.form['password']
-    res = req_sql("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+    res = req_sql("SELECT * FROM users WHERE username=? AND password=?",
+                  (username, password))
     if len(res) == 1:
         return redirect('/dashboard')
     else:
         return redirect('/')
 
+
 @app.route('/new_user')
 def new_user():
     return render_template('new_user.html')
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -118,20 +143,27 @@ def signup():
     global password
     username = request.form['username']
     password = request.form['password']
-    
-    req_sql("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
-    print('new user added')
+
+    req_sql("INSERT INTO users (username, password) VALUES (?, ?)",
+            (username, password))
     add_default_decks(username)
-    
+
     return redirect('/dashboard')
+
 
 @app.route('/dashboard')
 def dashboard():
     if (username is None) or (password is None):
         return redirect('/')
     else:
-        decks = req_sql('SELECT deck_id, deck_name FROM decks WHERE username=?', (username,))
-        return render_template('dashboard.html', head=head, username=username, decks=decks)
+        decks = req_sql(
+            'SELECT deck_id, deck_name FROM decks WHERE username=?',
+            (username, ))
+        return render_template('dashboard.html',
+                               head=head,
+                               username=username,
+                               decks=decks)
+
 
 @app.route('/new_deck')
 def new_deck():
@@ -139,51 +171,59 @@ def new_deck():
         return redirect('/')
     else:
         return render_template('new_deck.html', head=head, username=username)
-        
+
+
 @app.route('/deck_created', methods=['GET', 'POST'])
 def deck_created():
     if (username is None) or (password is None):
         return redirect('/')
     else:
         deck_name = request.form['deck_name']
-        req_sql("INSERT INTO decks (deck_name, username) VALUES (?, ?)", (deck_name, username))
+        req_sql("INSERT INTO decks (deck_name, username) VALUES (?, ?)",
+                (deck_name, username))
         return redirect('/dashboard')
+
 
 @app.route('/new_card')
 def new_card():
-    decks = req_sql("SELECT deck_id, deck_name FROM decks WHERE username=?", (username,))
-    print(decks)
-    return render_template('new_card.html', head=head, username=username, decks=decks)
+    decks = req_sql("SELECT deck_id, deck_name FROM decks WHERE username=?",
+                    (username, ))
+    return render_template('new_card.html',
+                           head=head,
+                           username=username,
+                           decks=decks)
+
 
 @app.route('/card_created', methods=['GET', 'POST'])
 def card_created():
     if (username is None) or (password is None):
         return redirect('/')
     else:
-        print('card created')
         lemma = request.form['lemma']
         deck_id = request.form['deck_id']
         if check_verb(lemma) and not_in_deck(lemma, deck_id):
-            req_sql("INSERT INTO cards (lemma, deck_id) VALUES (?, ?)", (lemma, deck_id))
+            req_sql("INSERT INTO cards (lemma, deck_id) VALUES (?, ?)",
+                    (lemma, deck_id))
             return redirect('/dashboard')
         else:
             return redirect('/wrong_word')
 
+
 @app.route('/wrong_word')
 def wrong_word():
     return render_template('wrong_word.html')
+
 
 @app.route('/study/<deck>', methods=['GET', 'POST'])
 def study(deck):
     if (username is None) or (password is None):
         return redirect('/')
     else:
-        print('entered study')
         global cards
-        if len(cards) == 0: # if the study session is not started yet
-            cards_raw = req_sql("SELECT card_id, lemma, mastery FROM cards WHERE cards.deck_id = ? ORDER BY mastery ASC LIMIT 15", (deck,))
-            print(deck)
-            print(req_sql('SELECT * FROM cards LIMIT 5'))
+        if len(cards) == 0:  # if the study session is not started yet
+            cards_raw = req_sql(
+                "SELECT card_id, lemma, mastery FROM cards WHERE cards.deck_id = ? ORDER BY mastery ASC LIMIT 15",
+                (deck, ))
             shuffle(cards_raw)
             for card in cards_raw:
                 card_fine = {
@@ -196,32 +236,45 @@ def study(deck):
                 }
                 card_fine['form'] = get_form(card_fine)
                 cards.append(card_fine)
-            print('cards set', cards) 
-            
-        if 'guess' in request.form and os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+
+        if 'guess' in request.form and os.environ.get(
+                "WERKZEUG_RUN_MAIN") == "true":
             # if not the first card in the session
             guess = request.form['guess']
-            if guess in cards[0]['form']: 
+            if guess in cards[0]['form']:
                 # if the guess of the previous card  is correct:
                 output = f'Pareizi! {cards[0]["lemma"]} => {guess}'
                 output_color = 'green'
                 # increase mastery and remove the card from study session
-                req_sql("UPDATE cards SET mastery = ? WHERE card_id = ?", (cards[0]['mastery'] + 1, cards[0]['card_id']))
+                req_sql("UPDATE cards SET mastery = ? WHERE card_id = ?",
+                        (cards[0]['mastery'] + 1, cards[0]['card_id']))
                 cards.pop(0)
             else:
                 output = f'Aplami! {cards[0]["lemma"]} => {cards[0]["form"][0]}, nevis {guess}'
                 output_color = 'red'
                 # increase mastery and move the card to the end of study session
-                req_sql("UPDATE cards SET mastery = ? WHERE card_id = ?", (cards[0]['mastery'] - 2, cards[0]['card_id']))
+                req_sql("UPDATE cards SET mastery = ? WHERE card_id = ?",
+                        (cards[0]['mastery'] - 2, cards[0]['card_id']))
                 cards.append(cards.pop(0))
         else:
             output = ''
             output_color = 'black'
-            
+
         if len(cards) > 0:
-            return render_template('study.html', head=head, username=username, card=cards[0], output=output, output_color=output_color, deck=deck)
+            return render_template('study.html',
+                                   head=head,
+                                   username=username,
+                                   card=cards[0],
+                                   output=output,
+                                   output_color=output_color,
+                                   deck=deck)
         else:
-            return render_template('study_over.html', head=head, username=username, output=output, output_color=output_color, deck=deck)
+            return render_template('study_over.html',
+                                   head=head,
+                                   username=username,
+                                   output=output,
+                                   output_color=output_color,
+                                   deck=deck)
 
 
 if __name__ == '__main__':
