@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  {{ head|safe }}
+
+  <title>Kārtiņas</title>
+  </head>
+  <body>
+    <h1>Pievienot kārtiņu</h1>
+    <p>Ievadiet darbības vārdu nenoteiksmē</p>
+      <form action="card_created" method="POST">
+        <label for="lemma">Vārds:</label>
+        <input type="text" id="lemma" name="lemma"><br><br>
+
+        <label for="deck_id">Kolekcija</label>
+        <select id="deck_id" name="deck_id">
+          {% for deck_id, deck_name in decks %}
+          <option value="{{deck_id}}">{{deck_name}}</option>
+          {% endfor %}
+        </select><br><br>
+        
+        <input type="submit" value="Izveidot">
+    </form><br><br>
+
+    <p><a href="/dashboard">Atpakaļ</a></p>
+  </body>
+</html>

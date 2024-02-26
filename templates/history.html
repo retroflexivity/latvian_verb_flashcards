@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  {{ head|safe }}
+
+  <title>Kārtiņas</title>
+  </head>
+  <body>
+    <h1>{{username}} spēļu vēsture</l></h1>
+    <ol>
+        {% for game in games %}
+        <li>iegūts {{game[2]}} bp</li>
+        {% endfor %}
+    </ol>
+      
+    <p><a href="/dashboard">Atpakaļ</a></p>
+  </body>
+</html>

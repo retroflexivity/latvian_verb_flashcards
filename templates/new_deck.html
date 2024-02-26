@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  {{ head|safe }}
+
+  <title>Kārtiņas</title>
+  </head>
+  <body>
+    <h1>Jauna kārtiņu kolekcija</h1>
+      <form action="deck_created" method="POST">
+        <label for="deck_name">Nosaukums:</label>
+        <input type="text" id="deck_name" name="deck_name"><br><br>
+        <input type="submit" value="Izveidot">
+    </form><br><br>
+
+    <p><a href="/dashboard">Atpakaļ</a></p>
+  </body>
+</html>

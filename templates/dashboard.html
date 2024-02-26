@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  {{ head|safe }}
+
+  <title>Kārtiņas</title>
+  </head>
+  <body>
+    <h1>Sveicināts, {{username}}!</l></h1>
+
+    <h2>Mācīties</h2>
+    {% for deck_id, deck_name in decks %}
+    <a class="btn" href="/study/{{deck_id}}">{{deck_id}} {{deck_name}}</a>
+    {% endfor %}
+    <br><br>
+    <a class="btn" href="/new_deck">Jauna kārtiņu kolekcija</a>
+    <a class="btn" href="/new_card">Pievienot kārtiņu</a>
+  </body>
+</html>

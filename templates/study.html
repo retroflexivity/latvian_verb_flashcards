@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  {{ head|safe }}
+
+  <title>Kārtiņas</title>
+  </head>
+  <body>
+    <p style="color:{{output_color}}">{{output}}</p>
+
+    <h2>{{card['lemma']}}</h2>
+    <p>Laiks: {{card['laiks']}}</p>
+    <p>Persona: {{card['persona']}}</p>
+    <p>Skaitlis: {{card['skaitlis']}}</p>
+
+    <form action="/study/{{deck}}" method="POST">
+      <label for="guess">Atbilde:</label>
+      <input type="text" id="guess" name="guess"><br><br>
+      <input type="submit" value="Pārbaudīt">
+    </form>
+    
+  </body>
+</html>
